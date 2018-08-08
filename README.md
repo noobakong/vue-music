@@ -77,3 +77,9 @@ function param (data) {
 - `_setSliderWidth`方法 -- 轮播图组件的宽度计算
 - `_initSlider()`方法 -- 使用`new BScroll` 创建轮播实例
 > 其中使用了BS插件的 `getCurrentPage` `goToPage` 方法 来获取和跳转当前页面来实现dots导航点的实现
+
+#### Todo
+- Jsonp 
+- Promise
+- 熟悉better-scroll插件
+- vue中的插槽 `slot`
