@@ -236,3 +236,37 @@ Vue.use(VueLazyLoad, {
 ```
 在Recommend.vue中使用
 `<img v-lazy="item.imgurl" alt="">`
+
+- **解决图片点击失效**
+有些情况下点击事件之间互相冲突，我们在使用fastclick的时候，可以给点击的dom添加一个fastclick里的一个css `needsclick`的类名，来确保点击事件可以正常执行
+
+- **loading组件**
+为了增加交互体验，在表单还未渲染之前，我们可以使用一个loading来占位。
+
+在base中新建loading组件
+```JavaScript
+<template>
+    <div class="loading">
+      <img src="./loading.gif" alt="">
+      <p class="desc">{{title}}</p>
+    </div>
+</template>
+
+<script>
+export default {
+  props: {
+    title: {
+      type: String,
+      default: '许文瑞正在吃屎。。。。'
+    }
+  }
+}
+</script>
+```
+
+在recommend.vue中添加如下代码：
+```HTML
+  <div class="loading-content" v-show="!discList.length">
+    <loading></loading>
+  </div>
+```
