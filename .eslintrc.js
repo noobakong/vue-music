@@ -28,5 +28,6 @@ module.exports = {
     'eol-last': 0, // 最后一行取消留空行
     'space-before-function-paren': 0, // 方法的左括号取消空格
     'indent': 0, // 忽略indent
+    'no-template-curly-in-string': 'off'
   }
 }

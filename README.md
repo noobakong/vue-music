@@ -1,4 +1,5 @@
 # Vue-Music
+
 ## 一| 前期工作
 ### 1.项目初始化
 - npm install -g vue-cli
@@ -270,3 +271,322 @@ export default {
     <loading></loading>
   </div>
 ```
+
+## 三| 歌手组件开发
+### 1.歌手首页开发
+
+#### 数据获取
+
+- 数据获取依旧从qq音乐官网获取
+
+  [歌手接口](https://c.y.qq.com/v8/fcg-bin/v8.fcg)
+
+- 创建singer.js
+
+  我们和以前一样，利用我们封装的jsonp等发放，来请求我们的接口，返回给singer.vue。
+
+> 成功获取数据以后，我们发现，官网的数据的数据结构和我们想要的不一样，所以我们下一步进行数据结构的聚合处理
+
+
+
+#### 数据处理
+
+我们希望的数据结构是数据按照字母排序的数组再加上一个热门的数组的集合，显然我们在官网的到的数据不是这样的，我们构造一个_normalizeSinger方法来完成：
+
+```JavaScript
+_normalizeSinger(list) { // 处理数据结构 形参为list
+      let map = { // 把数据都存在map对象中
+        hot: { // 热门城市
+          title: HOT_NAME,
+          items: [] // 初始化空数组
+        }
+      }
+      list.forEach((item, index) => { // 循环数组中的每一项
+        if (index < HOT_SINGER_LENGTH) { // 因为原始数据是按照热度排列的，所以获取前十的热门
+          map.hot.items.push(new Singer({ // push到我们的hot数组中
+          // new Singer: 为了模块化和减少代码的复用，我们在common > js 创建了一个singer.js
+          // 来创建一个类构造器 里面包括歌手头像的拼接
+            id: item.Fsinger_mid,
+            name: item.Fsinger_name
+          }))
+        }
+        const key = item.Findex // 歌手姓氏字首字母
+        if (!map[key]) { // 如果不存在
+          map[key] = { // 创建
+            title: key,
+            items: []
+          }
+        }
+        map[key].items.push(new Singer({ // 追加到map.items中
+          id: item.Fsinger_mid,
+          name: item.Fsinger_name
+        }))
+      })
+
+      // 为了得到有序列表 我们需要处理map
+      let hot = [] // 热门城市
+      let ret = [] // 字母表城市
+      for (let key in map) { // 循环
+        let val = map[key]
+        if (val.title.match(/[a-zA-Z]/)) { // 正则匹配字母
+          ret.push(val)
+        } else if (val.title === HOT_NAME) {
+          hot.push(val) // 热门城市
+        }
+      }
+      ret.sort((a, b) => {
+        return a.title.charCodeAt(0) - b.title.charCodeAt(0) // 把字母城市按charcode字母排序
+      })
+
+      return hot.concat(ret) // 将字母城市追加到hot城市 返回给外部
+    }
+```
+
+
+
+**细节点注意**
+
+> 关于歌手图片的获取，通过官网观察，我们发现图片是有一个网址拼接`item.Fsinger_mid` 来完成的，所以我们在common >js >singer.js中 使用了`${}`来拼接，获取歌手图片地址，拼接url语法是使用的是 `` 而不是' '
+
+
+
+#### listview.vue开发
+
+数据我们获取到了，我们接下来开发listview.vue组件，因为这个列表组件我们后面有很多页面也要用到，所以我们在base下创建基础组件 listview.vue
+
+在listview.vue中引入 我们之前封装好的scroll组件
+`import Scroll from 'base/scroll/scroll'`
+
+通过获取的数据，进行两次遍历渲染，就能得到我们想要的dom页面了
+
+html代码如下
+
+```html
+<template>
+  <scroll class="listview" :data="data">
+    <ul>
+      <li v-for="(group, index) in data" :key="index" class="list-group">
+        <h2 class="list-group-title">{{group.title}}</h2>
+        <ul>
+          <li v-for="(item, index) in group.items" :key="index" class="list-group-item">
+            <img v-lazy="item.avatar" class="avatar">
+            <span class="name">{{item.name}}</span>
+          </li>
+        </ul>
+      </li>
+    </ul>
+    <div class="list-shortcut">
+      <ul>
+        <li class="item" v-for="(item, index) in shortcutList" :key="index">
+          {{item}}
+        </li>
+      </ul>
+    </div>
+  </scroll>
+</template>
+```
+
+至此 歌手页面就能正常滚动了
+
+####  shortcutList字母导航器
+
+
+
+接下来，**开始我们的字母导航器的样式制作**
+
+我们可以在listview.vue中创建一个计算属性shortcutList
+
+```javascript
+computed: {
+      shortcutList() {
+        return this.data.map((group) => {
+          return group.title.substr(0, 1)
+        })
+      }
+    },
+```
+
+之后在页面中v-for渲染shortcutList即可 配合css样式 实现边栏的字母导航dom的制作
+
+```html
+    <div
+      class="list-shortcut"
+      @touchstart="onShortcutTouchStart"
+      @touchmove.stop.prevent="onShortcutTouchMove"
+    >
+      <ul>
+        <li
+          class="item"
+          v-for="(item, index) in shortcutList"
+          :key="index"
+          :data-index="index"
+          :class="{'current': currentIndex === index}"
+        >
+          {{item}}
+        </li>
+      </ul>
+    </div>
+```
+
+静态的字母导航在页面中已经展现出来了
+
+接下来 **来给导航器添加滑动点击等事件，使其动态化**
+
+- **滑动右边字母导航 listview实时滚动**
+
+  在字母html标签中加入touch事件**
+
+  ```
+    @touchstart="onShortcutTouchStart"
+    @touchmove.stop.prevent="onShortcutTouchMove"
+  ```
+
+  在循环中遍历index值，在后面的touch中获取索引，由于蕾类似此类获取数据的方法是很多地方都能用到的，我们在dom.js中添加getData方法
+
+  ```
+  export function getData(el, name, val) {
+    const perfix = 'data-'
+    name = perfix + name
+    if (val) {
+      return el.setAttribute(name, val)
+    } else {
+      return el.getAttribute(name)
+    }
+  }
+  ```
+
+  接下来 为scroll组件添加 跳转方法
+
+  ``` javascript
+  scrollTo() {
+        this.scroll && this.scroll.scrollTo.apply(this.scroll, arguments)
+      },
+      scrollToElement() {
+        this.scroll && this.scroll.scrollToElement.apply(this.scroll, arguments)
+  ```
+
+  完整的touch方法代码如下：
+
+```javascript
+onShortcutTouchStart(e) {
+      let anchorIndex = getData(e.target, 'index') // 获取data
+      let firstTouch = e.touches[0] // 刚开始触碰的位置坐标
+      this.touch.y1 = firstTouch.pageY
+      this.touch.anchorIndex = anchorIndex
+      this._scrollTo(anchorIndex) // 通过使用_scrollTo方法来跳转到我们的字母所在位置
+    },
+    onShortcutTouchMove(e) { // 屏幕滑动方法 要明确开始滚动和结束滚动的两个位置，然后计算出滚动到哪一个字母
+      let firstTouch = e.touches[0] // 停止滚动时的位置坐标
+      this.touch.y2 = firstTouch.pageY // 保存到touch对象中
+      let delta = (this.touch.y2 - this.touch.y1) / ANCHOR_HEIGHT | 0 // 计算滚动了多少个字母
+      let anchorIndex = parseInt(this.touch.anchorIndex) + delta // this.touch.anchorIndex 字符串转化为整型
+      this._scrollTo(anchorIndex) // 跳转到字母位置
+    }
+```
+
+> 注意：通过getData方法的到的anchorIndex是一个字符串，记得要用parseInt转化为数字
+
+至此 滑动字母导航器 左边的list已经可以实现滚动了
+
+
+
+- 滚动左边list 右边字母导航高亮
+
+    > 解决这个问题 ，就要知道左边listview滚动到的相对位置
+
+    1. 在data中增加scrollY 和 currentIndex来实时监听listview滚动的位置 和 应该滚动到的具体索引
+
+    2. 在scroll标签组件绑定@scroll='scroll' 来将滚动的实时位置赋值给this.scrollY
+
+       ```javascript
+           scroll(pos) {
+             this.scrollY = pos.y
+             console.log(pos) // 测试
+           }
+       ```
+
+    3. 在listview中添加监视属性data
+
+       ```javascript
+       watch: {
+           data() {
+             setTimeout(() => { // 数据变化到dom变化有一个延迟，所以这个加一个定时器
+               this._calculateHeight() // 计算每一个group的高度
+             }, 20)
+           }
+       ```
+
+       > 每次data变化，都会重新计算group的高度  
+
+    4. _calculateHeight方法
+
+       ```javascript
+           _calculateHeight() {
+             this.listHeight = []
+             const list = this.$refs.listGroup
+             let height = 0
+             this.listHeight.push(height)
+             for (let i = 0; i < list.length; i++) {
+               let item = list[i]
+               height += item.clientHeight
+               this.listHeight.push(height) // 得到一个包含每一个group高度的数组
+             }
+           }
+       ```
+
+       这样 就能得到一个包含所有grroup高度的一个数据
+
+    5. 在watch里监听scrollY
+
+       > 拿到了每组的位置，我们可以监听scrollY 联合两者判断字母导航器应该滚动到的位置 
+
+       ```javascript
+           scrollY(newY) {
+             const listHeight = this.listHeight
+             // 当滚动到顶部 newY > 0
+             if (newY > 0) {
+               this.currentIndex = 0
+               return
+             }
+
+             // 在中间部分滚动
+             for (let i = 0; i < listHeight.length; i++) {
+               let height1 = listHeight[i]
+               let height2 = listHeight[i + 1]
+               if (-newY >= height1 && -newY < height2) {
+                 this.currentIndex = i
+                 this.diff = height2 + newY // 注意 newY为负值
+                 return
+               }
+             }
+             // 当滚动到底部，且-newY 大于最后一个元素的上线
+             this.currentIndex = listHeight.length - 2
+           }
+       ```
+
+    6. currentIndex 绑定类 实现字母高亮
+
+       ` :class="{'current': currentIndex === index}"`
+
+       ​
+
+- 细节优化
+
+    1. 完善_scrollTo方法
+
+       ```javascript
+           _scrollTo(index) {
+             if (!index && index !== 0) { // 点击以外的部分 无反应
+               return
+             }
+             if (index < 0) { // 滑动到顶部时 index为负
+               index = 0
+             } else if (index > this.listHeight.length - 2) { // 滑动到尾部
+               index = this.listHeight.length - 2
+             }
+             this.scrollY = -this.listHeight[index] // 每次点击都更改scrollY以实现同步
+             this.$refs.listview.scrollToElement(this.$refs.listGroup[index], 300)
+           }
+       ```
+
+       ​

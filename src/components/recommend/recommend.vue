@@ -55,7 +55,7 @@
 
       setTimeout(() => {
         this._getDiscList() // 调用歌单列表
-      }, 1000)
+      }, 100)
     },
     methods: {
       // handlePlaylist(playlist) {
