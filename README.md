@@ -589,4 +589,48 @@ onShortcutTouchStart(e) {
            }
        ```
 
+    2. fixedTitle
+
+       计算属性
+
+       ```javascript
+           fixedTitle() {
+             if (this.scrollY > 0) {
+               return ''
+             }
+             return this.data[this.currentIndex] ? this.data[this.currentIndex].title : ''
+           }
+       ```
+
+       页面html
+
+       ```html
+           <div class="list-fixed" v-show="fixedTitle" ref="fixed">
+             <h1 class="fixed-title">{{this.fixedTitle}}</h1>
+           </div>
+       ```
+
+       > 至此 顶部的fixedtitle标题就做好了 但是我们发现两个title在重合的时候 并不是很完美，下面我们就来添加一个顶上去的动画来优化
+
+       在scrollY函数中 我们可以轻松获取一个 diff 值 
+
+       `this.diff = height2 + newY // 注意 newY为负值`
+
+       通过监听diff 我们可以来实现我们的要求
+
+       ```javascript
+           diff(newVal) {
+             let fixedTop = (newVal > 0 && newVal < TITLE_HEIGHT) ? newVal - TITLE_HEIGHT : 0
+             if (this.fixedTop === fixedTop) {
+               return
+             }
+             this.fixedTop = fixedTop
+             this.$refs.fixed.style.transform = `translate3d(0,${fixedTop}px,0)`
+           }
+       ```
+
        ​
+
+### 2.歌手详情页
+
+> 歌手详情使用二级子路由来开发
