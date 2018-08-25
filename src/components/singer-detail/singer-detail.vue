@@ -25,7 +25,7 @@ export default {
       return this.singer.avatar
     },
     ...mapGetters([
-      'singer'
+      'singer' // 把 `this.signer` 映射为 `this.$store.getters.singer`
     ])
   },
   created() {
@@ -43,7 +43,6 @@ export default {
         if (res.code === ERR_OK) {
           console.log(res.data.list)
           this.songs = this._normalizeSongs(res.data.list)
-          // console.log(this.songs)
         }
       })
     },

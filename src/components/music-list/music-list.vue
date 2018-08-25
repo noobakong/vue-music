@@ -14,9 +14,7 @@
       <div class="filter" ref="filter">
       </div>
     </div>
-    <div class="bg-layer" ref="layer">
-
-    </div>
+    <div class="bg-layer" ref="layer"></div>
     <scroll
       class="list"
       ref="list"

@@ -27,7 +27,7 @@ export default {
   methods: {
     selectSinger(singer) {
       this.$router.push({
-        path: `/singer/${singer.id}`
+        path: `/singer/${singer.id}` // 跳转页面
       })
       this.setSinger(singer)
     },
@@ -86,7 +86,7 @@ export default {
     },
 
     ...mapMutations({
-      setSinger: 'SET_SINGER'
+      setSinger: 'SET_SINGER' // 将 `this.setSinger()` 映射为 `this.$store.commit('SET_SINGER')`
     })
   },
   components: {

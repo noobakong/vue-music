@@ -131,7 +131,7 @@ export default {
   },
   methods: {
     selectItem(item) {
-      this.$emit('select', item)
+      this.$emit('select', item) // 向外派发事件
     },
     onShortcutTouchStart(e) {
       let anchorIndex = getData(e.target, 'index') // 获取data
