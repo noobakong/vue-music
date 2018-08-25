@@ -634,3 +634,520 @@ onShortcutTouchStart(e) {
 ### 2.歌手详情页
 
 > 歌手详情使用二级子路由来开发
+
+#### 字路由 / 二级路由设置
+
+> 路由是由组件承载的
+
+在router -- index.js中 写入代码
+
+**添加字路由**
+
+```javascript
+{
+      path: '/singer',
+      name: 'Singer',
+      component: Singer,
+      children: [
+        {
+          path: ':id',
+          component: SingerDetail
+        }
+      ]
+    }
+```
+
+如代码所示，在Singer component组件路由选项中，添加`children` 实现二级路由，然后需要在页面上加上`router-view`
+
+标签来挂在这个二级路由显示页面
+
+**编写跳转逻辑**
+
+在次页面中，二级路由的跳转是在listview.vue中通过点击事件向外派发事件来实现的
+
+```javascript
+    selectItem(item) {
+      this.$emit('select', item) // 向外派发事件
+    }
+```
+
+
+
+> 因为listview.vue是一个基础组件，不会编写业务逻辑，所以把点击事件派发出去，让外部实现业务逻辑的编写
+
+在singer.vue 中，我们监听到这个派发出来的select
+
+`<list-view :data="singers" @select="selectSinger"></list-view>`
+
+然后在selectSinger方法里面使用vue-router的 编程式跳转接口
+
+```javascript
+ selectSinger(singer) {
+      this.$router.push({
+        path: `/singer/${singer.id}` // 跳转页面
+      })
+    }
+```
+
+#### 添加转场动画
+
+将singer-detail.vue 组件用transition标签包裹
+
+并在css中添加动画
+
+```scss
+.slide-enter-active, .slide-leave-active
+    transition: all 0.3s
+ .slide-enter, .slide-leave-to
+    transform: translate3d( 0, 100%, 0)
+```
+
+就下来，开始正式开发singer-detail组件,在这之前，我们先了解一下Vuex [跳转到vuex笔记](#jumpvuex)
+
+#### 获取singer-detail数据
+
+```javascript
+export function getSingerDetail(singerId) {
+  const url = 'https://c.y.qq.com/v8/fcg-bin/fcg_v8_singer_track_cp.fcg'
+  const data = Object.assign({}, commonParams, {
+    hostUin: 0,
+    needNewCode: 0,
+    platform: 'h5page',
+    order: 'listen',
+    begin: 0,
+    num: 50,
+    songstatus: 1,
+    g_tk: 649509476,
+    singermid: singerId // 注意是mid而不是id 不要出错
+  })
+
+  return jsonp(url, data, options)
+}
+```
+
+> 当在singer-detail页面上刷新的时候，会获取不到数据，因为我们的数据是通过跳转得到的，如果我们在singer-detail数据上刷新，将返回上一级signer `this.$router.push('/singer')`
+
+
+
+#### 整理获取的数据结构
+
+**common>js>song.js**
+
+```javascript
+export default class Song {
+  constructor({id, mid, singer, name, album, duration, image, url}) {
+    this.id = id
+    this.mid = mid
+    this.singer = singer
+    this.name = name
+    this.album = album
+    this.duration = duration
+    this.image = image
+    this.url = url
+  }
+}
+
+export function createSong(musicData) {
+  return new Song({
+    id: musicData.songid,
+    mid: musicData.songmid,
+    singer: filterSonger(musicData.singer),
+    name: musicData.songname,
+    album: musicData.albumname,
+    duration: musicData.interval,
+    image: `https://y.gtimg.cn/music/photo_new/T002R300x300M000${musicData.albummid}.jpg?max_age=2592000`,
+    url: `http://ws.stream.qqmusic.qq.com/C100${musicData.songmid}.m4a?fromtag=0&guid=126548448&crazycache=1`
+  })
+}
+
+function filterSonger(singer) {
+  let ret = []
+  if (!singer) {
+    return ''
+  }
+  singer.forEach((s) => {
+    ret.push(s.name)
+  })
+  return ret.join('/')
+}
+```
+
+通过方法调用类构造器，我们就能通过`createSong(musicData)`来整理获得我们需要的结构数据
+
+**singer-detail**
+
+```javascript
+  methods: {
+    _getDetail() {
+      if (!this.singer.id) {
+        this.$router.push('/singer')
+      }
+      getSingerDetail(this.singer.id).then((res) => {
+        if (res.code === ERR_OK) {
+          console.log(res.data.list)
+          this.songs = this._normalizeSongs(res.data.list)
+        }
+      })
+    },
+    _normalizeSongs(list) {
+      let ret = []
+      list.forEach((item) => {
+        let {musicData} = item
+        if (musicData.songid && musicData.albummid) {
+          ret.push(createSong(musicData)) 
+        }
+      })
+      return ret
+    }
+  }
+```
+
+这样 通过调用_normalizeSongs方法 --> createSong 来得到songs数据
+
+#### 开发MusicList.vue组件
+
+在props中接受变量 bgImgae songs title
+
+在singer-detail
+
+通过计算属性拿到title 和 bgImage ，
+
+`<music-list :songs="songs" :title="title" :bg-image="bgImage"></music-list>`
+
+这样就完成了父组件的singer-detail向子组件的music-list的传值
+
+
+
+
+
+> 因为歌曲列表是滚动的 我们在music-list中复用了scroll组件
+>
+> 我们还需要编写一个song-lsit组件，为接下来所用 [跳转到song-list组件开发](#jumpsonglist)
+
+在music-list编写代码：
+
+```vue
+    <scroll
+      class="list"
+      ref="list"
+      :data="songs"
+      :probe-type="probeType"
+      :listen-scroll="listenScroll"
+      @scroll="scroll"
+    >
+      <div class="song-list-wrapper">
+        <song-list :songs="songs"></song-list>
+      </div>
+      <div class="loading-container" v-show="!songs.length">
+        <loading></loading>
+      </div>
+    </scroll>
+```
+
+> 至此，打开页面，我们可以看到歌单列表已经可以正常滚动
+
+##### 1. 解决图片撑开问题
+
+> 这是我们发现我们的页面上全部被歌单列表所占用， 要计算图片的位置把歌手背景图展现出来
+
+在mounted生命周期钩子里添加
+
+```javascript
+ this.$refs.list.$el.style.top = `${this.$refs.bgImage.clientHeight}px`
+```
+
+这样就能实现歌手海报图的展示了
+
+
+
+##### 2. 实现海报图跟着滚动的效果
+
+我们在music-list.vue中加入一个layer层，用于跟着跟单一起滚动，来覆盖我们的bg-image，这样就能视觉上达到我们想要的效果了
+
+`    <div class="bg-layer" ref="layer"></div>`
+
+监听滚动距离
+
+为scroll组件传入probeType值和listenScroll值
+
+```vue
+    created() {
+      this.probeType = 3
+      this.listenScroll = true
+    }
+```
+
+为scroll添加scroll方法来监听滚动距离
+
+```javascript
+      scroll(pos) {
+        this.scrollY = pos.y
+      }
+```
+
+并监听scrollY数据 
+
+```javascript
+    watch: {
+      scrollY(newY) {
+        let translateY = Math.max(this.minTranslateY, newY)
+        let zIndex = 0
+        let scale = 1
+        let blur = 0
+        this.$refs.layer.style[transform] = `translate3d(0, ${translateY}px, 0)`
+        const percent = Math.abs(newY / this.imageHeight)
+        if (newY > 0) {
+          scale = 1 + percent
+          zIndex = 10
+        } else {
+          blur = Math.min(20 * percent, 20)
+        }
+        this.$refs.filter.style[backdrop] = `blur(${blur}px)`
+        if (newY < this.minTranslateY) {
+          zIndex = 10
+          this.$refs.bgImage.style.paddingTop = 0
+          this.$refs.bgImage.style.height = `${RESERVED_HEIGHT}px`
+          this.$refs.pbtn.style.display = 'none'
+        } else {
+          this.$refs.bgImage.style.paddingTop = '70%'
+          this.$refs.bgImage.style.height = 0
+          this.$refs.pbtn.style.display = ''
+        }
+        this.$refs.bgImage.style.zIndex = zIndex
+        this.$refs.bgImage.style[transform] = `scale(${scale})`
+      }
+    }
+```
+
+##### 3. 处理滚动到顶部的时候歌手title被歌单覆盖的问题
+
+> 处理方法见上面代码zIndex相关操作
+
+
+
+##### 4. 下滑的时候bg-image图片放大
+
+> 处理见上代码 bgImage scale相关的操作
+
+##### ５. 加入loading组件
+
+>  在scroll结尾复用loading 即可
+
+
+
+
+
+
+
+#### <span id="jumpvuex">开发song-list组件</span>
+
+```vue
+<template>
+  <div class="song-list">
+    <ul v-for="(song, index) in songs" :key="index" class="item">
+      <div class="content">
+        <h2 class="name">{{song.name}}</h2>
+        <p class="desc">{{getDesc(song)}}</p>
+      </div>
+    </ul>
+  </div>
+</template>
+
+<script type="text/ecmascript-6">
+export default {
+  props: {
+    songs: {
+      type: Array,
+      default: () => []
+    }
+  },
+  methods: {
+    getDesc(song) {
+      return `${song.singer} - ${song.album}`
+    }
+  }
+}
+</script>
+```
+
+在music-list中传入song值
+
+`<song-list :songs="songs"></song-list>`
+
+
+
+
+
+### <span id="jumpvuex">a. Vuex</span>
+
+#### 什么是vuex
+
+> Vuex 是一个专为 Vue.js 应用程序开发的**状态管理模式**。它采用集中式存储管理应用的所有组件的状态，并以相应的规则保证状态以一种可预测的方式发生变化。Vuex 也集成到 Vue 的官方调试工具 [devtools extension](https://github.com/vuejs/vue-devtools)，提供了诸如零配置的 time-travel 调试、状态快照导入导出等高级调试功能。
+
+简单的说，当我们的vue项目比较复杂的时候，有的时候两个兄弟组件，或者相关度联系很低的组件相互之间需要同时获取或监听同一个数据或状态，这个时候我们就要使用vuex
+
+> vuex 就像是一个大的机房，里面存着共享数据。这个房间我们可以让任何一个组件进来获取数据或者更新数据
+
+![image](http://upload-images.jianshu.io/upload_images/11993435-700bb2cea1af7320.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+#### 如何使用vuex
+
+安装vuex
+
+`npm install vuex --save`
+
+在项目的根目录下，我们一般会新建一个store文件夹，里面添加新建文件：
+
+- 入口文件 index.js  
+
+- 存放状态 state.js
+
+- 存放Mutations mutations.js
+
+- 存放mutations相关数据的 mutation-types.js
+
+- 数据修改 执行Mutations  actions.js
+
+- 数据映射 getters.js
+
+  > `getters` 和 vue 中的 `computed` 类似 , 都是用来计算 state 然后生成新的数据 ( 状态 ) 的。
+
+以此项目为例子，需要各个组件之间共享一个singer数据
+
+**state.js**
+
+```javascript
+const state = {
+  singer: {}
+}
+
+export default state
+```
+
+
+
+**mutation-types.js**
+
+```javascript
+export const SET_SINGER = 'SET_SINGER'
+```
+
+> 使用常量替代 mutation 事件类型在各种 Flux 实现中是很常见的模式。这样可以使 linter 之类的工具发挥作用，同时把这些常量放在单独的文件中可以让你的代码合作者对整个 app 包含的 mutation 一目了然
+
+
+
+**mutations.js**
+
+```javascript
+import * as types from './mutation-types'
+// import * as obj from "xxx" 会将 "xxx" 中所有 export 导出的内容组合成一个对象返回。
+const mutations = {
+  [types.SET_SINGER](state, singer) {
+    state.singer = singer
+  }
+}
+export default mutations
+```
+
+> mutations.js 可以理解为是一个修改数据的方法的集合
+
+
+
+**getter.js**
+
+有时候我们需要从 store 中的 state 中派生出一些状态，如果有多个组件需要用到此属性，我们要么复制这个函数，或者抽取到一个共享函数然后在多处导入它——无论哪种方式都不是很理想。
+
+Vuex 允许我们在 store 中定义“getter”（可以认为是 store 的计算属性）。就像计算属性一样，getter 的返回值会根据它的依赖被缓存起来，且只有当它的依赖值发生了改变才会被重新计算。
+
+```javascript
+export const singer = state => state.singer
+```
+
+
+
+**index.js**
+
+```javascript
+import Vue from 'vue'
+import Vuex from 'vuex'
+import * as actions from './actions'
+import * as getters from './getters'
+import state from './state'
+import mutations from './mutations'
+import createLogger from 'vuex/dist/logger'
+
+Vue.use(Vuex) // 注册插件
+
+const debug = process.env.NODE_ENV !== 'production' // 线下调试的时候 debug 为 ture
+
+export default new Vuex.Store({ // new一个实例
+  actions,
+  getters,
+  state,
+  mutations,
+  strict: debug, // 开启严格模式，用于下面来控制是否开启插件
+  plugins: debug ? [createLogger()] : [] // 开启插件
+})
+```
+
+
+
+**main.js**
+
+在vue的main.js 中 注册 vuex
+
+```
+import store from './store'
+....
+
+new Vue({
+  el: '#app',
+  render: h => h(App),
+  router,
+  store
+})
+```
+
+以上，vuex的初始化就完成了
+
+
+
+**singer.vue 写入 state**
+
+在组件中提交 Mutation
+
+你可以在组件中使用 `this.$store.commit('xxx')` 提交 mutation，或者使用 `mapMutations` 辅助函数将组件中的 methods 映射为 `store.commit` 调用（需要在根节点注入 `store`）。
+
+`import {mapMutations} from 'vuex'`
+
+在methods结尾添加
+
+```javascript
+...mapMutations({
+	setSinger: 'SET_SINGER' // 将 `this.setSinger()` 映射为 `this.$store.commit('SET_SINGER')`
+})
+```
+
+通过`this.setSinger(singer)` 实现了对Mutations的提交
+
+
+
+**singer-detail.vue  取出state数据**
+
+引入
+
+`import {mapGetters} from 'vuex'`
+
+在computed中
+
+```javascript
+  computed: {
+    ......
+    
+    ...mapGetters([
+      'singer'  // 把 `this.signer` 映射为 `this.$store.getters.singer`
+    ])
+  }
+```
+
+至此，singer-detail 和 singer 之间就实现 singer 的共享了
