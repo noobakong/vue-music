@@ -81,6 +81,7 @@ function param (data) {
 > - 大公司一般用0来代表一切正常
 
 #### 轮播图组件
+<<<<<<< HEAD
 - **轮播图数据获取完成后，就下来做的就是搭建轮播页面 ，接下来编写一个轮播组件 `slider.vue`**
   1. 新建`base`文件夹，储存如同slider.vue的基础组件
   在silder.vue中，我们使用了slot插槽，外部引用slider的时候slider标签里面包裹的dom会被插入到slot插槽部分。
@@ -1152,3 +1153,17 @@ new Vue({
 ```
 
 至此，singer-detail 和 singer 之间就实现 singer 的共享了
+=======
+> 轮播图数据获取完成后，就下来做的就是搭建轮播页面 ，接下来编写一个轮播组件 `slider.vue`
+- 使用了第三方轮播 better-scroll
+> 新版的snap属性集合成了一个对象选项 而旧版的是单独的属性名，这点要注意
+- `_setSliderWidth`方法 -- 轮播图组件的宽度计算
+- `_initSlider()`方法 -- 使用`new BScroll` 创建轮播实例
+> 其中使用了BS插件的 `getCurrentPage` `goToPage` 方法 来获取和跳转当前页面来实现dots导航点的实现
+
+#### Todo
+- Jsonp 
+- Promise
+- 熟悉better-scroll插件
+- vue中的插槽 `slot`
+>>>>>>> recommend-slider

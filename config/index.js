@@ -19,7 +19,8 @@ module.exports = {
           '^/api': '/'
         },
         headers: {
-          referer: 'https://c.y.qq.com'
+          referer: 'https://c.y.qq.com/',
+          host: 'c.y.qq.com'
         }
       }
     },

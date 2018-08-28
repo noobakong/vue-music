@@ -30,7 +30,9 @@
               </div>
             </div>
             <div class="playing-lyric-wrapper">
-              <div class="playing-lyric">{{playLyric}}</div>
+              <div class="playing-lyric">{{playPrevLyric}}</div>
+              <div class="playing-lyric current" >{{playLyric}}</div>
+              <div class="playing-lyric">{{playNextLyric}}</div>
             </div>
           </div>
           <scroll class="middle-r" ref="lyricList" :data="currentLyric && currentLyric.lines">
@@ -132,7 +134,9 @@ export default {
       currentLyric: null,
       currentLineNum: 0,
       currentPageShow: 'cd',
-      playLyric: ''
+      playLyric: '',
+      playNextLyric: '',
+      playPrevLyric: ''
     }
   },
   computed: {
@@ -319,9 +323,7 @@ export default {
           this.currentLyric.play()
         }
       }).catch(() => {
-        this.currentLyric = null
-        this.currentLineNum = 0
-        this.playLyric = ''
+        this.clearLyric()
       })
     },
     handleLyric({lineNum, txt}) {
@@ -332,7 +334,21 @@ export default {
       } else {
         this.$refs.lyricList.scrollTo(0, 0, 1000)
       }
+      const lines = this.currentLyric.lines
+      if (lineNum > 0) {
+        this.playPrevLyric = lines[lineNum - 1].txt
+      }
       this.playLyric = txt
+      this.playNextLyric = lines[lineNum + 1].txt
+    },
+    clearLyric() {
+        this.currentLyric = null
+        this.currentLineNum = 0
+        this.playLyric = ''
+        this.playNextLyric = ''
+        if (this.playPrevLyric) {
+          this.playPrevLyric = ''
+        }
     },
     middleTouchStart(e) {
       this.touch.initiated = true
@@ -424,6 +440,7 @@ export default {
       }
       if (this.currentLyric) {
         this.currentLyric.stop()
+        this.clearLyric()
       }
       setTimeout(() => {
         this.$refs.audio.play() // 播放
@@ -542,6 +559,8 @@ export default {
               line-height: 20px
               font-size: $font-size-medium
               color: $color-text-l
+              &.current
+                color: $color-theme
         .middle-r
           display: inline-block
           vertical-align: top
@@ -558,7 +577,7 @@ export default {
               color: $color-text-l
               font-size: $font-size-medium
               &.current
-                color: #ffcd32
+                color: $color-theme
       .bottom
         position: absolute
         bottom: 50px

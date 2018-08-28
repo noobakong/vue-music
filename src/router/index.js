@@ -5,6 +5,7 @@ import Rank from 'components/rank/rank'
 import Singer from 'components/singer/singer'
 import Search from 'components/search/search'
 import SingerDetail from 'components/singer-detail/singer-detail'
+import MusicDisc from 'components/music-disc/music-disc'
 
 Vue.use(Router) // 注册
 
@@ -15,7 +16,13 @@ export default new Router({
     }, {
       path: '/recommend',
       name: 'Recommend',
-      component: Recommend
+      component: Recommend,
+      children: [
+        {
+          path: ':id',
+          component: MusicDisc
+        }
+      ]
     }, {
       path: '/singer',
       name: 'Singer',
