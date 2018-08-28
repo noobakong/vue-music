@@ -81,7 +81,6 @@
         this.dots = new Array(this.children.length)
       },
       _initSlider() { // 初始化better-scroll来实现slider
-        console.log(this.loop)
         this.slider = new BScroll(this.$refs.slider, {
           scrollX: true,
           scrollY: false,
