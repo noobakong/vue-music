@@ -677,6 +677,8 @@ export default {
         flex: 1
         line-height: 20px
         overflow: hidden
+        .singer
+          no-wrap()
         .name
           margin-bottom: 2px
           no-wrap()

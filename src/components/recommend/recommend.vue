@@ -39,12 +39,12 @@
   import Loading from 'base/loading/loading'
   import Scroll from 'base/scroll/scroll'
   import { getRecommend, getDiscList } from 'api/recommend' // 获取方法
-  // import {playlistMixin} from 'common/js/mixin'
+  import {playListMixin} from 'common/js/mixin'
   import {ERR_OK} from 'api/config' // err_ok = 0
   import {mapMutations} from 'vuex'
 
   export default {
-    // mixins: [playlistMixin],
+    mixins: [playListMixin],
     data() {
       return {
         recommends: [],
@@ -59,12 +59,11 @@
       }, 100)
     },
     methods: {
-      // handlePlaylist(playlist) {
-      //   const bottom = playlist.length > 0 ? '60px' : ''
-
-      //   this.$refs.recommend.style.bottom = bottom
-      //   this.$refs.scroll.refresh()
-      // },
+      handlePlayList(playList) {
+        const bottom = playList.length > 0 ? '60px' : ''
+        this.$refs.recommend.style.bottom = bottom
+        this.$refs.scroll.refresh()
+      },
       // loadImage() {
       //   if (!this.checkloaded) {
       //     this.checkloaded = true

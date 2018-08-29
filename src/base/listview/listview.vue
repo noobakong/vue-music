@@ -147,6 +147,9 @@ export default {
       let anchorIndex = parseInt(this.touch.anchorIndex) + delta // this.touch.anchorIndex 字符串转化为整型
       this._scrollTo(anchorIndex) // 跳转到字母位置
     },
+    refresh() {
+      this.$refs.listview.refresh()
+    },
     scroll(pos) {
       this.scrollY = pos.y
       // console.log(pos) // 测试
