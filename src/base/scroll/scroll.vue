@@ -23,6 +23,14 @@ export default {
     listenScroll: { // 是否监听滚动
       type: Boolean,
       default: false
+    },
+    pullup: {
+      type: Boolean,
+      default: false
+    },
+    beforeScroll: {
+      type: Boolean,
+      default: false
     }
   },
   mounted() {
@@ -41,9 +49,24 @@ export default {
       })
 
       if (this.listenScroll) { // 是否监听滚动
-        let me = this // 保留vue实例 因为better-scroll中的this是指向better-scroll的
+        let me = this
+        // 保留vue实例 因为better-scroll中的this是指向better-scroll的
         this.scroll.on('scroll', (pos) => {
           me.$emit('scroll', pos)
+        })
+      }
+
+      if (this.pullup) {
+        this.scroll.on('scrollEnd', () => {
+          if (this.scroll.y <= (this.scroll.maxScrollY + 50)) {
+            this.$emit('scrollToEnd')
+          }
+        })
+      }
+
+      if (this.beforeScroll) {
+        this.scroll.on('beforeScrollStart', () => {
+          this.$emit('beforeScroll')
         })
       }
     },
