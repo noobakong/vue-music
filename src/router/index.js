@@ -7,6 +7,7 @@ import Search from 'components/search/search'
 import SingerDetail from 'components/singer-detail/singer-detail'
 import MusicDisc from 'components/music-disc/music-disc'
 import TopListDetail from 'components/top-list-detail/top-list-detail'
+import UserCenter from 'components/user-center/user-center'
 
 Vue.use(Router) // 注册
 
@@ -54,6 +55,10 @@ export default new Router({
           component: SingerDetail
         }
       ]
+    }, {
+      path: '/user',
+      name: 'UserCenter',
+      component: UserCenter
     }
   ]
 })
