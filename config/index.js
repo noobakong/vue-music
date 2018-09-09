@@ -11,12 +11,12 @@ module.exports = {
     assetsSubDirectory: 'static',
     assetsPublicPath: '/',
     proxyTable: {
-      '/': {
+      '/api': {
         target: 'https://c.y.qq.com',
         secure: false,
         changeOrigin: true,
         pathRewrite: {
-          '^/api': '/'
+          '^/api': ''
         },
         headers: {
           referer: 'https://c.y.qq.com/',

@@ -8,6 +8,11 @@ import VueLazyLoad from 'vue-lazyload'
 
 import 'common/stylus/index.styl' // 引入项目结构样式
 
+// /* eslint-disable no-unused-vars */
+
+// import vConsole from 'vconsole'
+
+console.log('test')
 fastClick.attach(document.body)
 
 Vue.use(VueLazyLoad, {

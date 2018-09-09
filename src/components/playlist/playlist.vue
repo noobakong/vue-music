@@ -74,7 +74,6 @@
         setTimeout(() => {
           this.$refs.listContent.refresh()
           this.scrollToCurrent(this.currentSong)
-          console.log(123)
         }, 20)
       },
       hide() {
@@ -102,7 +101,6 @@
         const index = this.sequenceList.findIndex((song) => {
           return current.id === song.id
         })
-        console.log(index)
         this.$refs.listContent.scrollToElement(this.$refs.listItem[index], 300)
       },
       deleteOne(item) {

@@ -168,6 +168,12 @@ export default {
   },
   created() {
     this.touch = {}
+    document.querySelector('html').ontouchstart = () => {
+      if (this.songReady && window.ONCE_FLAG) {
+        window.ONCE_FLAG = false
+        this.$refs.audio.play()
+      }
+    }
   },
   methods: {
     backclick() {
