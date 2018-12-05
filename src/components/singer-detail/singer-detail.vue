@@ -6,7 +6,7 @@
 
 <script>
 import {mapGetters} from 'vuex'
-import {getSingerDetail} from 'api/singer'
+import {getSingerDetail, getSongVkey} from 'api/singer'
 import {ERR_OK} from 'api/config'
 import {createSong} from 'common/js/song'
 import MusicList from 'components/music-list/music-list'
@@ -49,9 +49,16 @@ export default {
       let ret = []
       list.forEach((item) => {
         let {musicData} = item
-        if (musicData.songid && musicData.albummid) {
-          ret.push(createSong(musicData))
-        }
+          getSongVkey(musicData.songmid).then((res) => {
+            // console.log('这首歌的vkey获取到了')
+            // console.log(res.data)
+            const vkey = res.data.items[0].vkey
+            if (musicData.songid && musicData.albummid) {
+              ret.push(createSong(musicData, vkey))
+            }
+          }, (e) => {
+            console.log(e)
+          })
       })
       return ret
     }
